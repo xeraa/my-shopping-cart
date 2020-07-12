@@ -20,7 +20,7 @@
             <groupId>co.elastic.logging</groupId>
             <artifactId>logback-ecs-encoder</artifactId>
         </dependency>
-        <!-- elastic-apm -->
+        <!-- elastic-tracer -->
         <dependency>
             <groupId>co.elastic.apm</groupId>
             <artifactId>apm-agent-attach</artifactId>
@@ -29,12 +29,28 @@
             <groupId>co.elastic.apm</groupId>
             <artifactId>apm-agent-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>co.elastic.apm</groupId>
+            <artifactId>apm-opentracing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.opentracing</groupId>
+            <artifactId>opentracing-api</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>co.elastic.apm</groupId>
+            <artifactId>apm-opentracing</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>co.elastic.apm</groupId>
+            <artifactId>apm-opentracing</artifactId>
         </dependency>
     </dependencies>
     <build>

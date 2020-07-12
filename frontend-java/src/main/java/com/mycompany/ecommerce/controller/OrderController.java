@@ -1,7 +1,5 @@
 package com.mycompany.ecommerce.controller;
 
-import co.elastic.apm.api.CaptureTransaction;
-import co.elastic.apm.api.ElasticApm;
 import com.mycompany.ecommerce.dto.OrderProductDto;
 import com.mycompany.ecommerce.exception.ResourceNotFoundException;
 import com.mycompany.ecommerce.model.Order;
@@ -10,6 +8,8 @@ import com.mycompany.ecommerce.model.OrderStatus;
 import com.mycompany.ecommerce.service.OrderProductService;
 import com.mycompany.ecommerce.service.OrderService;
 import com.mycompany.ecommerce.service.ProductService;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +40,7 @@ public class OrderController {
     ProductService productService;
     OrderService orderService;
     OrderProductService orderProductService;
+    Tracer tracer;
     RestTemplate restTemplate;
     String antiFraudServiceBaseUrl;
 
@@ -58,20 +59,20 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<Order> create(@RequestBody OrderForm form, HttpServletRequest request) {
-        ElasticApm.currentSpan().setName("createOrder");
+        Span span = tracer.activeSpan().setOperationName("createOrder");
         List<OrderProductDto> formDtos = form.getProductOrders();
         validateProductsExistence(formDtos);
 
         String customerId = "customer-" + RANDOM.nextInt(100); // TODO better demo
-        ElasticApm.currentSpan().addLabel("customerId", customerId);
+        span.setBaggageItem("customerId", customerId);
+        span.setTag("customerId", customerId);
 
         double totalPrice = formDtos.stream().mapToDouble(po -> po.getQuantity() * po.getProduct().getPrice()).sum();
-        // FIXME shouldn't orderTotalPrice be log message rather than tag / label?
-        ElasticApm.currentSpan().addLabel("orderTotalPrice", totalPrice);
-        ElasticApm.currentSpan().addLabel("orderTotalPriceRange", getPriceRange(totalPrice));
+        span.log(Collections.singletonMap("orderTotalPrice", totalPrice));
+        span.setTag("orderTotalPriceRange", getPriceRange(totalPrice));
 
         String shippingCountry = "FR"; // TODO better demo
-        ElasticApm.currentSpan().addLabel("shippingCountry", shippingCountry);
+        span.setTag("shippingCountry", shippingCountry);
         ResponseEntity<String> antiFraudResult;
         try {
             antiFraudResult = restTemplate.getForEntity(
@@ -82,10 +83,9 @@ public class OrderController {
 
         } catch (RestClientException e) {
             String exceptionShortDescription = e.getClass().getName();
-            ElasticApm.currentSpan().addLabel("antiFraud.exception", exceptionShortDescription);
-            ElasticApm.currentSpan().captureException(e);
+            span.setTag("antiFraud.exception", exceptionShortDescription);
             if (e.getCause() != null) { // capture SockerTimeoutException...
-                ElasticApm.currentSpan().addLabel("antiFraud.exception.cause", e.getCause().getClass().getName());
+                span.setTag("antiFraud.exception.cause", e.getCause().getClass().getName());
                 exceptionShortDescription += " / " + e.getCause().getClass().getName();
             }
             HttpHeaders httpHeaders = new HttpHeaders();
@@ -95,7 +95,7 @@ public class OrderController {
         }
         if (antiFraudResult.getStatusCode() != HttpStatus.OK) {
             String exceptionShortDescription = "status-" + antiFraudResult.getStatusCode();
-            ElasticApm.currentSpan().addLabel("antiFraud.exception", exceptionShortDescription);
+            span.setTag("antiFraud.exception", exceptionShortDescription);
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.add("x-orderCreationFailureCause", "auti-fraud_" + exceptionShortDescription);
             logger.info("Failure createOrder({}): totalPrice: {}, fraud.exception:{}", form, totalPrice, exceptionShortDescription);
@@ -103,7 +103,7 @@ public class OrderController {
         }
         if (!"OK".equals(antiFraudResult.getBody())) {
             String exceptionShortDescription = "response-" + antiFraudResult.getBody();
-            ElasticApm.currentSpan().addLabel("antiFraud.exception", exceptionShortDescription);
+            span.setTag("antiFraud.exception", exceptionShortDescription);
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.add("x-orderCreationFailureCause", "auti-fraud_" + exceptionShortDescription);
             logger.info("Failure createOrder({}): totalPrice: {}, fraud.exception:{}", form, totalPrice, exceptionShortDescription);
@@ -160,6 +160,11 @@ public class OrderController {
     @Value("${antiFraudService.baseUrl}")
     public void setAntiFraudServiceBaseUrl(String antiFraudServiceBaseUrl) {
         this.antiFraudServiceBaseUrl = antiFraudServiceBaseUrl;
+    }
+
+    @Autowired
+    public void setTracer(Tracer tracer) {
+        this.tracer = tracer;
     }
 
     public String getPriceRange(double price) {

@@ -1,7 +1,10 @@
 package com.mycompany.ecommerce;
 
+import co.elastic.apm.opentracing.ElasticApmTracer;
 import co.elastic.apm.attach.ElasticApmAttacher;
+import io.opentracing.Tracer;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -11,7 +14,9 @@ import java.util.Properties;
 /**
  * @author <a href="mailto:cyrille@cyrilleleclerc.com">Cyrille Le Clerc</a>
  */
-public class ElasticConfiguration {
+public class ElasticConfiguration implements Closeable {
+
+    private ElasticApmTracer tracer = new ElasticApmTracer();
 
     public void postConstruct() throws IOException {
         String serviceVersion = "1.0.0-SNAPSHOT";
@@ -39,4 +44,14 @@ public class ElasticConfiguration {
         System.out.println("Load ElasticAPM with configuration " + configuration);
         ElasticApmAttacher.attach(configuration);
     }
+
+    @Override
+    public void close() throws IOException {
+        tracer.close();
+    }
+
+    public Tracer getTracer() {
+        return tracer;
+    }
+
 }

@@ -3,6 +3,9 @@ package com.mycompany.ecommerce.controller;
 import co.elastic.apm.api.ElasticApm;
 import com.mycompany.ecommerce.model.Product;
 import com.mycompany.ecommerce.service.ProductService;
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,7 +17,8 @@ import javax.validation.constraints.NotNull;
 @RequestMapping("/api/products")
 public class ProductController {
 
-    private ProductService productService;
+    ProductService productService;
+    Tracer tracer;
 
     public ProductController(ProductService productService) {
         this.productService = productService;
@@ -22,7 +26,8 @@ public class ProductController {
 
     @GetMapping(value = { "", "/" })
     public @NotNull Iterable<Product> getProducts() {
-        ElasticApm.currentSpan().setName("products");
+        Span span = tracer.activeSpan().setOperationName("products");
+
         return productService.getAllProducts();
     }
 
@@ -31,5 +36,10 @@ public class ProductController {
         ElasticApm.currentSpan().setName("product");
         ElasticApm.currentSpan().addLabel("product.id", id);
         return productService.getProduct(id);
+    }
+
+    @Autowired
+    public void setTracer(Tracer tracer) {
+        this.tracer = tracer;
     }
 }
