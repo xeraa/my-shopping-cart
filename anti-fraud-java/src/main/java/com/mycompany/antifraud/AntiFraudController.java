@@ -37,7 +37,7 @@ public class AntiFraudController {
 
     int averageDurationMillisOnSmallShoppingCarts = 50;
     int averageDurationMillisOnMediumShoppingCarts = 50;
-    int averageDurationMillisOnLargeShoppingCart = 200;
+    int averageDurationMillisOnLargeShoppingCart = 1000;
 
     int fraudPercentageOnSmallShoppingCarts = 0;
     int fraudPercentageOnMediumShoppingCarts = 0;
@@ -57,7 +57,7 @@ public class AntiFraudController {
             @RequestParam String shippingCountry,
             @RequestParam String customerIpAddress) {
 
-        Span span = tracer.activeSpan().setOperationName("checkOrder");
+        Span span = tracer.activeSpan().setOperationName("order_check");
         span
                 .log(Collections.singletonMap("totalPrice", totalPrice))
                 .log(Collections.singletonMap("customerIpAddress", customerIpAddress))
@@ -84,7 +84,6 @@ public class AntiFraudController {
             tracer.activeSpan().setTag("fraudScore", fraudScore);
 
             boolean rejected = fraudScore > 0;
-
 
             try (Connection cnn = dataSource.getConnection()) {
                 try (Statement stmt = cnn.createStatement()) {

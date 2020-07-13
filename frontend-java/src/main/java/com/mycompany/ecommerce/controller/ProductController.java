@@ -1,8 +1,8 @@
 package com.mycompany.ecommerce.controller;
 
-import co.elastic.apm.api.ElasticApm;
 import com.mycompany.ecommerce.model.Product;
 import com.mycompany.ecommerce.service.ProductService;
+import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,17 +24,16 @@ public class ProductController {
         this.productService = productService;
     }
 
-    @GetMapping(value = { "", "/" })
+    @GetMapping(value = {"", "/"})
     public @NotNull Iterable<Product> getProducts() {
-        Span span = tracer.activeSpan().setOperationName("products");
-
+        Span span = tracer.activeSpan().setOperationName("products_get");
         return productService.getAllProducts();
     }
 
     @GetMapping("/{id}")
     public @NotNull Product getProduct(@PathVariable long id) {
-        ElasticApm.currentSpan().setName("product");
-        ElasticApm.currentSpan().addLabel("product.id", id);
+        Span span = tracer.activeSpan().setOperationName("product_get");
+        span.setTag("product.id", id);
         return productService.getProduct(id);
     }
 

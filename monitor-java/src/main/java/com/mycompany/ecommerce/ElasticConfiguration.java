@@ -20,7 +20,7 @@ public class ElasticConfiguration implements Closeable {
 
     public void postConstruct() throws IOException {
         String serviceVersion = "1.0.0-SNAPSHOT";
-        String serviceName = "monitor";
+        String serviceName = "com-shoppingcart_monitor";
         String applicationPackages = getClass().getPackage().getName();
 
         Map<String, String> configuration = new HashMap<>();
@@ -37,6 +37,8 @@ public class ElasticConfiguration implements Closeable {
             for (final String name : properties.stringPropertyNames())
                 configuration.put(name, properties.getProperty(name));
         }
+
+        configuration.put("disable_instrumentations", "experimental, urlconnection");
 
         // https://www.elastic.co/guide/en/apm/agent/java/current/config-logging.html#config-enable-log-correlation
         configuration.put("enable_log_correlation", "true");

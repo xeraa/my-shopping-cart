@@ -8,6 +8,7 @@ import com.mycompany.ecommerce.model.OrderStatus;
 import com.mycompany.ecommerce.service.OrderProductService;
 import com.mycompany.ecommerce.service.OrderService;
 import com.mycompany.ecommerce.service.ProductService;
+import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import org.slf4j.Logger;
@@ -59,7 +60,8 @@ public class OrderController {
 
     @PostMapping
     public ResponseEntity<Order> create(@RequestBody OrderForm form, HttpServletRequest request) {
-        Span span = tracer.activeSpan().setOperationName("createOrder");
+        Span span = tracer.activeSpan().setOperationName("order_create");
+
         List<OrderProductDto> formDtos = form.getProductOrders();
         validateProductsExistence(formDtos);
 
@@ -136,7 +138,6 @@ public class OrderController {
         headers.add("Location", uri);
 
         return new ResponseEntity<>(order, headers, HttpStatus.CREATED);
-
     }
 
     private void validateProductsExistence(List<OrderProductDto> orderProducts) {

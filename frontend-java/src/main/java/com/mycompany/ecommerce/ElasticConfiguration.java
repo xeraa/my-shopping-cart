@@ -54,6 +54,9 @@ public class ElasticConfiguration {
                 configuration.put(name, properties.getProperty(name));
         }
 
+        configuration.put("disable_instrumentations", "experimental, servlet-api, spring-mvc, spring-resttemplate, urlconnection");
+
+
         // https://www.elastic.co/guide/en/apm/agent/java/current/config-logging.html#config-enable-log-correlation
         configuration.put("enable_log_correlation", "true");
         // warning may contain secret `secret_token`
