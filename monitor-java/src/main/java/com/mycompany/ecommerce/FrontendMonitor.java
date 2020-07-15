@@ -56,7 +56,7 @@ public class FrontendMonitor {
 
     public void placeOrder(String url, int quantity, Product product) throws IOException {
         Span placeOrderSpan = tracer.buildSpan("order_place").start();
-        try (Scope scope = tracer.scopeManager().activate(placeOrderSpan)){
+        try (Scope scope = tracer.scopeManager().activate(placeOrderSpan)) {
             getProduct(url, product);
             createOrder(url, quantity, product);
         } finally {
@@ -66,7 +66,7 @@ public class FrontendMonitor {
 
     public void createOrder(String url, int quantity, Product product) throws IOException {
         Span getProductSpan = tracer.buildSpan("order_create").asChildOf(tracer.activeSpan()).start();
-        try (Scope scope = tracer.scopeManager().activate(getProductSpan)){
+        try (Scope scope = tracer.scopeManager().activate(getProductSpan)) {
             URL createProductUrl = new URL(url + "/api/orders");
             HttpURLConnection createOrderConnection = (HttpURLConnection) createProductUrl.openConnection();
             createOrderConnection.setRequestMethod("POST");
@@ -101,7 +101,7 @@ public class FrontendMonitor {
 
     public void getProduct(String url, Product product) throws IOException {
         Span getProductSpan = tracer.buildSpan("getProduct").asChildOf(tracer.activeSpan()).start();
-        try (Scope scope = tracer.scopeManager().activate(getProductSpan)){
+        try (Scope scope = tracer.scopeManager().activate(getProductSpan)) {
             URL getProductUrl = new URL(url + "/api/products/" + product.id);
 
             HttpURLConnection getProductConnection = (HttpURLConnection) getProductUrl.openConnection();
