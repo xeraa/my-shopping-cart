@@ -12,6 +12,7 @@
         <spring-boot.version>2.3.4.RELEASE</spring-boot.version>
         <elastic-apm.version>1.18.1</elastic-apm.version>
         <ecs-logging-java.version>0.5.1</ecs-logging-java.version>
+        <prometheus-client.version>0.9.0</prometheus-client.version>
     </properties>
     <modules>
         <module>frontend-java</module>
@@ -44,18 +45,44 @@
                 <version>${ecs-logging-java.version}</version>
             </dependency>
 
+            <!-- Prometheus Client -->
+            <!--
+            BOM will be shipped starting on 0.9.1
+            https://github.com/prometheus/client_java/blob/master/simpleclient_bom/pom.xml
             <dependency>
-                <groupId>io.micrometer</groupId>
-                <artifactId>micrometer-bom</artifactId>
-                <version>1.5.5</version>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient_bom</artifactId>
+                <version>0.9.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            -->
             <dependency>
-                <groupId>org.jolokia</groupId>
-                <artifactId>jolokia-core</artifactId>
-                <version>1.6.2</version>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient</artifactId>
+                <version>${prometheus-client.version}</version>
             </dependency>
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient_guava</artifactId>
+                <version>${prometheus-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient_httpserver</artifactId>
+                <version>${prometheus-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient_servlet</artifactId>
+                <version>${prometheus-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.prometheus</groupId>
+                <artifactId>simpleclient_pushgateway</artifactId>
+                <version>${prometheus-client.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 </project>

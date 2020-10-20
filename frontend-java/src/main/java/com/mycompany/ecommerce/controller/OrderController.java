@@ -1,6 +1,5 @@
 package com.mycompany.ecommerce.controller;
 
-import co.elastic.apm.api.CaptureTransaction;
 import co.elastic.apm.api.ElasticApm;
 import com.mycompany.ecommerce.dto.OrderProductDto;
 import com.mycompany.ecommerce.exception.ResourceNotFoundException;
@@ -10,8 +9,9 @@ import com.mycompany.ecommerce.model.OrderStatus;
 import com.mycompany.ecommerce.service.OrderProductService;
 import com.mycompany.ecommerce.service.OrderService;
 import com.mycompany.ecommerce.service.ProductService;
-import io.micrometer.core.instrument.DistributionSummary;
-import io.micrometer.core.instrument.Metrics;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
+import io.prometheus.client.Summary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +45,16 @@ public class OrderController {
     RestTemplate restTemplate;
     String antiFraudServiceBaseUrl;
 
+    Summary orderSummary = Summary.build("order", "Orders")
+            .quantile(0.75, 0.05).quantile(0.95, 0.05)
+            .register();
+    Summary orderWithLabelsSummary = Summary.build("order_with_tags", "Orders with tags")
+            .quantile(0.75, 0.05).quantile(0.95, 0.05)
+            .labelNames("shipping_country", "shipping_method", "payment_method")
+            .register();
+    Counter orderValueCounter = Counter.build("order_value_counter", "Value of the orders in USD").register();
+    Counter orderCountCounter = Counter.build("order_count_counter", "Count of orders").register();
+
     public OrderController(ProductService productService, OrderService orderService, OrderProductService orderProductService) {
         this.productService = productService;
         this.orderService = orderService;
@@ -74,6 +84,13 @@ public class OrderController {
 
         String shippingCountryCode = getCountryCode(request.getRemoteAddr());
         ElasticApm.currentSpan().addLabel("shippingCountry", shippingCountryCode);
+
+        String shippingMethod = randomShippingMethod();
+        ElasticApm.currentSpan().addLabel("shippingMethod", shippingMethod);
+
+        String paymentMethod = randomPaymentMethod();
+        ElasticApm.currentSpan().addLabel("paymentMethod", paymentMethod);
+
         ResponseEntity<String> antiFraudResult;
         try {
             antiFraudResult = restTemplate.getForEntity(
@@ -126,21 +143,10 @@ public class OrderController {
 
         this.orderService.update(order);
 
-        DistributionSummary.builder("order")
-                .publishPercentileHistogram()
-                .publishPercentiles(0.75, 0.95)
-                .register(Metrics.globalRegistry)
-                .record(orderPrice);
-
-        Metrics.counter("order_value_counter").increment(orderPrice);
-        Metrics.counter("order_count_counter").increment();
-
-        DistributionSummary.builder("order_per_country")
-                .tags("shipping_country", shippingCountryCode)
-                .publishPercentileHistogram()
-                .publishPercentiles(0.75, 0.95)
-                .register(Metrics.globalRegistry)
-                .record(orderPrice);
+        orderSummary.observe(orderPrice);
+        orderWithLabelsSummary.labels(shippingCountryCode, shippingMethod, paymentMethod).observe(orderPrice);
+        orderValueCounter.inc(orderPrice);
+        orderCountCounter.inc();
 
         logger.info("SUCCESS createOrder({}): price: {}, id:{}", form, orderPrice, order.getId());
 
@@ -172,6 +178,16 @@ public class OrderController {
     public String getCountryCode(String ip) {
         String[] countries = {"US", "FR", "GB",};
         return countries[RANDOM.nextInt(countries.length)];
+    }
+
+    public String randomPaymentMethod() {
+        String[] paymentMethods = {"credit_cart", "paypal"};
+        return paymentMethods[RANDOM.nextInt(paymentMethods.length)];
+    }
+
+    public String randomShippingMethod() {
+        String[] shippingMethods = {"standard", "express"};
+        return shippingMethods[RANDOM.nextInt(shippingMethods.length)];
     }
 
     @Autowired

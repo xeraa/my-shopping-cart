@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 import com.mycompany.ecommerce.model.Product;
 import com.mycompany.ecommerce.service.ProductService;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.prometheus.client.exporter.MetricsServlet;
+import io.prometheus.client.guava.cache.CacheMetricsCollector;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.actuate.autoconfigure.metrics.MeterRegistryCustomizer;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.client.RestTemplate;
 
@@ -45,6 +46,16 @@ public class EcommerceApplication {
     @Bean
     public Module getJacksonHibernate5Module() {
         return new Hibernate5Module();
+    }
+
+    @Bean
+    public CacheMetricsCollector getCacheMetricsCollector(){
+        return new CacheMetricsCollector().register();
+    }
+
+    @Bean
+    public ServletRegistrationBean prometheus(){
+        return new ServletRegistrationBean( new MetricsServlet(), "/metrics");
     }
 
 }

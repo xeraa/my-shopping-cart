@@ -5,8 +5,7 @@ import com.google.common.cache.CacheBuilder;
 import com.mycompany.ecommerce.exception.ResourceNotFoundException;
 import com.mycompany.ecommerce.model.Product;
 import com.mycompany.ecommerce.repository.ProductRepository;
-import io.micrometer.core.instrument.Metrics;
-import io.micrometer.core.instrument.binder.cache.GuavaCacheMetrics;
+import io.prometheus.client.guava.cache.CacheMetricsCollector;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,12 +16,12 @@ import java.util.concurrent.ExecutionException;
 public class ProductServiceImpl implements ProductService {
 
     private ProductRepository productRepository;
-    Cache<Long, Product> productCache;
+    private Cache<Long, Product> productCache;
 
-    public ProductServiceImpl(ProductRepository productRepository) {
+    public ProductServiceImpl(ProductRepository productRepository, CacheMetricsCollector cacheMetricsCollector) {
         this.productRepository = productRepository;
         this.productCache = CacheBuilder.newBuilder().maximumSize(2).recordStats().build();
-        GuavaCacheMetrics.monitor(Metrics.globalRegistry, this.productCache, "productCache");
+        cacheMetricsCollector.addCache("productCache", this.productCache);
     }
 
     @Override

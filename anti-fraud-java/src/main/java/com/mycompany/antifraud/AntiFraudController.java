@@ -1,7 +1,6 @@
 package com.mycompany.antifraud;
 
 import co.elastic.apm.api.ElasticApm;
-import io.micrometer.core.instrument.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -109,14 +108,6 @@ public class AntiFraudController {
                 ElasticApm.currentSpan().captureException(e);
                 e.printStackTrace();
             }
-
-
-            Metrics.counter(
-                    "micrometer_antifraud_order_check",
-                    "micrometer_antifraud_order_check_success", Boolean.toString(!rejected),
-                    "micrometer_antifraud_order_check_price_range", priceRange,
-                    "micrometer_antifraud_order_check_shipping_country", shippingCountry).
-                    increment();
 
             String result;
             if (rejected) {
