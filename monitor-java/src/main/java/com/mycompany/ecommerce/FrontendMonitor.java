@@ -1,5 +1,6 @@
 package com.mycompany.ecommerce;
 
+import io.opentelemetry.opentracingshim.OpenTracingShim;
 import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
@@ -129,12 +130,11 @@ public class FrontendMonitor {
 
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        ElasticConfiguration elasticConfiguration = new ElasticConfiguration();
-        elasticConfiguration.postConstruct();
-        Tracer tracer = elasticConfiguration.getTracer();
+        Tracer tracer =  OpenTracingShim.createTracerShim();
 
         FrontendMonitor frontendMonitor = new FrontendMonitor(tracer);
         frontendMonitor.post("http://localhost:8080");
+        tracer.close();
     }
 
     private static class Product {

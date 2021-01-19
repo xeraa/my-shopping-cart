@@ -15,23 +15,10 @@
     </properties>
 
     <dependencies>
-        <!-- elastic logs-->
+        <!-- opentelemetry-tracer -->
         <dependency>
-            <groupId>co.elastic.logging</groupId>
-            <artifactId>logback-ecs-encoder</artifactId>
-        </dependency>
-        <!-- elastic-tracer -->
-        <dependency>
-            <groupId>co.elastic.apm</groupId>
-            <artifactId>apm-agent-attach</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>co.elastic.apm</groupId>
-            <artifactId>apm-agent-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>co.elastic.apm</groupId>
-            <artifactId>apm-opentracing</artifactId>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-opentracing-shim</artifactId>
         </dependency>
         <dependency>
             <groupId>io.opentracing</groupId>

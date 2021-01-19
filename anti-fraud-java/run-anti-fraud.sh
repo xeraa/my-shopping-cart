@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -x
 
-export ELASTIC_AGENT_VERSION=1.19.0
+export OPEN_TELEMETRY_AGENT_VERSION=0.14.0
 
 ##########################################################################################
 # PARENT DIRECTORY
@@ -23,17 +23,39 @@ done
 # Get standard environment variables
 PRGDIR=`dirname "$PRG"`
 
+
+export OPEN_TELEMETRY_AGENT_HOME=$PRGDIR/../.otel
+mkdir -p "$OPEN_TELEMETRY_AGENT_HOME"
+
 ##########################################################################################
-# DOWNLOAD ELASTIC_AGENT AGENT
+# DOWNLOAD OPEN TELEMETRY AGENT IF NOT FOUND
+# code copied from Maven Wrappers's mvnw`
 ##########################################################################################
-mkdir -p $PRGDIR/target/agent
-cp  $PRGDIR/etc/elastic-agent/elasticapm.properties $PRGDIR/target/agent
-$PRGDIR/../mvnw dependency:copy \
-      -Dartifact=co.elastic.apm:elastic-apm-agent:$ELASTIC_AGENT_VERSION \
-      -DoutputDirectory=$PRGDIR/target/agent/
+export OPEN_TELEMETRY_AGENT_JAR=$OPEN_TELEMETRY_AGENT_HOME/opentelemetry-javaagent-all-$OPEN_TELEMETRY_AGENT_VERSION.jar
+if [ -r "$OPEN_TELEMETRY_AGENT_JAR" ]; then
+    echo "Found $OPEN_TELEMETRY_AGENT_JAR"
+else
+    echo "Couldn't find $OPEN_TELEMETRY_AGENT_JAR, downloading it ..."
+    jarUrl="https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v$OPEN_TELEMETRY_AGENT_VERSION/opentelemetry-javaagent-all.jar"
+
+    if command -v wget > /dev/null; then
+        wget "$jarUrl" -O "$OPEN_TELEMETRY_AGENT_JAR"
+    elif command -v curl > /dev/null; then
+        curl -o "$OPEN_TELEMETRY_AGENT_JAR" "$jarUrl"
+    else
+        echo "FAILURE: OpenTelemetry agent not found and  none of curl and wget found"
+        exit 1;
+    fi
+fi
 
 $PRGDIR/../mvnw -DskipTests package
 
-java -javaagent:target/agent/elastic-apm-agent-$ELASTIC_AGENT_VERSION.jar \
-    -Dserver.port=8081 \
+
+export OTEL_RESOURCE_ATTRIBUTES=service.name=anti-fraud,service.namespace=com-shoppingcart,service.version=1.0-SNAPSHOT,deployment.environment=staging
+java -javaagent:$OPEN_TELEMETRY_AGENT_JAR \
+     -Dotel.exporter.otlp.endpoint=localhost:4317 \
+     -Dserver.port=8081 \
+     -Dio.opentelemetry.auto.slf4j.simpleLogger.defaultLogLevel=info \
      -jar target/anti-fraud-1.0-SNAPSHOT.jar
+
+#      -Dio.opentelemetry.auto.slf4j.simpleLogger.defaultLogLevel=info \
